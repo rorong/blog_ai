@@ -70,3 +70,4 @@ end
 
 gem "langchainrb"
 gem "ruby-openai"
+gem 'dotenv-rails'
