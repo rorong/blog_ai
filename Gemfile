@@ -71,3 +71,5 @@ end
 gem "langchainrb"
 gem "ruby-openai"
 gem 'dotenv-rails'
+gem "httparty"
+gem 'sidekiq'
