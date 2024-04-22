@@ -1,6 +1,7 @@
 class BlogController < ApplicationController
   before_action :set_auth_token
-  
+  skip_before_action :verify_authenticity_token
+
   def create
     fetch_tasks
   end
@@ -21,7 +22,7 @@ class BlogController < ApplicationController
       render_error("An error occurred while fetching tasks: #{e.message}")
     end
   end
-  
+
   def fetch_tasks_from_api
     url = if Rails.env.production?
             "https://cc.heymira.ai/api/v1/copilot_tasks"
@@ -40,7 +41,27 @@ class BlogController < ApplicationController
   end
   
   def mark_tasks_completed(tasks)
-    
+    tasks.each do |task|
+      url = if Rails.env.production?
+        "https://cc.heymira.ai/api/v1/tasks/#{task["id"]}"
+      else
+        "http://localhost:3000/api/v1/tasks/#{task["id"]}"
+      end
+      params = {
+                project_id: task["project_id"],
+                organization_id: task["organization_id"],
+                task: {
+                  status: "completed"
+                }
+              }
+      options = {
+                headers: { "Authorization" => @auth_token },
+                body: params
+              }
+      HTTParty.patch(url, options)
+   end
+   
+   render json: {message: "Blogs Created and Task Completed for",task: tasks}
   end
   
   def set_auth_token
