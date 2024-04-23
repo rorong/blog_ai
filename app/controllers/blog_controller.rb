@@ -24,11 +24,7 @@ class BlogController < ApplicationController
   end
 
   def fetch_tasks_from_api
-    url = if Rails.env.production?
-            "https://cc.heymira.ai/api/v1/copilot_tasks"
-          else
-            "http://localhost:3000/api/v1/copilot_tasks"
-          end
+    url = Rails.env.production? ? "https://cc.heymira.ai/api/v1/copilot_tasks" : "http://localhost:3000/api/v1/copilot_tasks"
     options = {
       headers: { "Authorization" => @auth_token }
     }
@@ -42,11 +38,7 @@ class BlogController < ApplicationController
   
   def mark_tasks_completed(tasks)
     tasks.each do |task|
-      url = if Rails.env.production?
-        "https://cc.heymira.ai/api/v1/tasks/#{task["id"]}"
-      else
-        "http://localhost:3000/api/v1/tasks/#{task["id"]}"
-      end
+      url = Rails.env.production? ? "https://cc.heymira.ai/api/v1/tasks/#{task['id']}" : "http://localhost:3000/api/v1/tasks/#{task['id']}"
       params = {
                 project_id: task["project_id"],
                 organization_id: task["organization_id"],
@@ -54,10 +46,7 @@ class BlogController < ApplicationController
                   status: "completed"
                 }
               }
-      options = {
-                headers: { "Authorization" => @auth_token },
-                body: params
-              }
+      options = { headers: { "Authorization" => @auth_token }, body: params }
       HTTParty.patch(url, options)
    end
    
