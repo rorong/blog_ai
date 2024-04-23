@@ -4,6 +4,8 @@ class BlogController < ApplicationController
 
   def create
     fetch_tasks
+    render json: { message: "Blog creation process initiated" }, status: :accepted
+
   end
   
   private
@@ -13,8 +15,7 @@ class BlogController < ApplicationController
       tasks_response = fetch_tasks_from_api
       if tasks_response.success?
         @tasks = filter_tasks(tasks_response)
-        CreateBlogsJob.perform_async(@tasks)
-        mark_tasks_completed(@tasks)
+        CreateBlogsJob.perform_async(@tasks,@auth_token)
       else
         render_error("An error occurred while fetching tasks: #{tasks_response.code}")
       end
@@ -35,24 +36,7 @@ class BlogController < ApplicationController
     tasks = tasks_response["tasks"]
     tasks.select { |task| task["status"] != "validated" && task["status"] != "completed" && task["status"] != "deleted" }
   end
-  
-  def mark_tasks_completed(tasks)
-    tasks.each do |task|
-      url = Rails.env.production? ? "https://cc.heymira.ai/api/v1/tasks/#{task['id']}" : "http://localhost:3000/api/v1/tasks/#{task['id']}"
-      params = {
-                project_id: task["project_id"],
-                organization_id: task["organization_id"],
-                task: {
-                  status: "completed"
-                }
-              }
-      options = { headers: { "Authorization" => @auth_token }, body: params }
-      HTTParty.patch(url, options)
-   end
-   
-   render json: {message: "Blogs Created and Task Completed for",task: tasks}
-  end
-  
+
   def set_auth_token
     @auth_token = request.headers['Authorization']
     render_error('Authorization token is missing', :unauthorized) if @auth_token.nil?
