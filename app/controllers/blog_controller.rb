@@ -4,8 +4,6 @@ class BlogController < ApplicationController
 
   def create
     fetch_tasks
-    render json: { message: "Blog creation process initiated" }, status: :accepted
-
   end
   
   private
@@ -17,15 +15,17 @@ class BlogController < ApplicationController
         @tasks = filter_tasks(tasks_response)
         CreateBlogsJob.perform_async(@tasks,@auth_token)
       else
-        render_error("An error occurred while fetching tasks: #{tasks_response.code}")
+        render_error("An error occurred while fetching tasks: #{tasks_response.code}") && return
       end
     rescue StandardError => e
-      render_error("An error occurred while fetching tasks: #{e.message}")
+      render_error("An error occurred while fetching tasks: #{e.message}") && return
     end
+    render json: { message: "Blog creation process initiated" }, status: :accepted
   end
 
   def fetch_tasks_from_api
-    url = Rails.env.production? ? "https://cc.heymira.ai/api/v1/copilot_tasks" : "http://localhost:3000/api/v1/copilot_tasks"
+    base_url = Rails.application.config.api_base_url
+    url ="#{base_url}/api/v1/copilot_tasks"
     options = {
       headers: { "Authorization" => @auth_token }
     }

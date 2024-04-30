@@ -44,7 +44,8 @@ class CreateBlogsJob
     tasks.each_with_index do |task,index|
       generated_contents = generated_contents.nil? ? nil : generated_contents[index]
       begin
-        url = Rails.env.production? ? "https://cc.heymira.ai/api/v1/tasks/#{task['id']}" : "http://localhost:3000/api/v1/tasks/#{task['id']}"
+        base_url = Rails.application.config.api_base_url
+        url = "#{base_url}/api/v1/tasks/#{task['id']}"
         params = {
           project_id: task["project_id"],
           organization_id: task["organization_id"],
