@@ -6,10 +6,11 @@ class CreateBlogsJob
   def perform(tasks,auth_token)
     @auth_token = auth_token
     tasks.each_slice(BATCH_SIZE) do |batch_tasks|
+      update_task_statuses(batch_tasks, nil,"in_progress")
       batch_prompts = batch_tasks.map { |task| generate_prompt(task["description"]) }
       generated_contents = generate_blog_posts(batch_prompts)
       save_blog_posts(batch_tasks, generated_contents)
-      update_task_statuses(batch_tasks, generated_contents)
+      update_task_statuses(batch_tasks, generated_contents,"completed")
     end
   end
 
@@ -39,16 +40,17 @@ class CreateBlogsJob
     end
   end
   
-  def update_task_statuses(tasks,generated_contents)
+  def update_task_statuses(tasks,generated_contents,status)
     tasks.each_with_index do |task,index|
+      generated_contents = generated_contents.nil? ? nil : generated_contents[index]
       begin
         url = Rails.env.production? ? "https://cc.heymira.ai/api/v1/tasks/#{task['id']}" : "http://localhost:3000/api/v1/tasks/#{task['id']}"
         params = {
           project_id: task["project_id"],
           organization_id: task["organization_id"],
           task: {
-            status: "completed",
-            blog: generated_contents[index]
+            status: status,
+            blog: generated_contents
           }
         }
         options = { headers: { "Authorization" => @auth_token }, body: params }
