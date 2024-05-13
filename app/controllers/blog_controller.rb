@@ -38,13 +38,39 @@ class BlogController < ApplicationController
   end
 
   def set_auth_token
-    @auth_token = request.headers['Authorization']
-    render_error('Authorization token is missing', :unauthorized) if @auth_token.nil?
+    begin
+      base_url = Rails.application.config.api_base_url
+      url = "#{base_url}/api/v1/sign_in"
+      options = {
+        body: {
+          email: params[:email],
+          type: "copilot",
+          password:  ENV["PASSWORD"]
+        }.to_json,
+        headers: {
+          'Content-Type' => 'application/json'
+        }
+      }
+      response = HTTParty.post(url, options)
+      @auth_token = nil
+      if response.code == 201
+        parsed_response = JSON.parse(response.body)
+        @auth_token = parsed_response['user']['access_token']
+      else
+        render_error(response['error_msg']) && return
+      end
+      render_error('Authorization token is missing', :unauthorized) if @auth_token.nil?
+    rescue StandardError => e
+      render_error("An error occurred: #{e.message}", :internal_server_error)
+    end
   end
+  
   
   def render_error(message, status = :internal_server_error)
     render json: { error: message }, status: status
   end
+  
+
   
   
 end
